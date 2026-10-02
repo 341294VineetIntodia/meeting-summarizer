@@ -1,6 +1,5 @@
 import streamlit as st
 import google.generativeai as genai
-import pandas as pd
 
 st.set_page_config(page_title="AI Meeting Summarizer", page_icon="📝")
 
@@ -45,24 +44,35 @@ if st.button("Generate Summary & Action Items", type="primary"):
     if not transcript.strip():
         st.warning("Please enter or paste a transcript first.")
         st.stop()
-
+        
     with st.spinner("Analyzing transcript with Gemini..."):
-        try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
+        # Model fallback list to ensure instant execution
+        candidate_models = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-pro"]
+        response = None
+        last_error = None
+        
+        prompt = f"""
+        Analyze the following meeting transcript:
+        
+        "{transcript}"
+        
+        Perform two tasks:
+        1. Provide a concise executive summary (3-4 bullet points).
+        2. Extract all action items in a strict Markdown Table format with columns: Action Item | Owner | Due Date.
+        """
 
-            prompt = f"""
-            Analyze the following meeting transcript:
-
-            "{transcript}"
-
-            Perform two tasks:
-            1. Provide a concise executive summary (3-4 bullet points).
-            2. Extract all action items in a strict Markdown Table format with columns: Action Item | Owner | Due Date.
-            """
-
-            response = model.generate_content(prompt)
+        for model_name in candidate_models:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                if response and response.text:
+                    break
+            except Exception as e:
+                last_error = e
+                continue
+        
+        if response and response.text:
             st.success("Analysis Complete!")
             st.markdown(response.text)
-
-        except Exception as e:
-            st.error(f"Error calling Gemini API: {e}")
+        else:
+            st.error(f"Error calling Gemini API across available models: {last_error}")
