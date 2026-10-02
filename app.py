@@ -1,38 +1,51 @@
 import streamlit as st
-from google import genai
+from groq import Groq
 
-# -----------------------------
+# --------------------------------
 # PAGE CONFIG
-# -----------------------------
+# --------------------------------
+
 st.set_page_config(
     page_title="AI Meeting Summarizer",
     page_icon="📝",
     layout="centered"
 )
 
-st.title("📝 AI Meeting Summarizer")
-st.caption("Transform messy meeting transcripts into structured summaries and action items.")
+# --------------------------------
+# HEADER
+# --------------------------------
 
-# -----------------------------
+st.title("📝 AI Meeting Summarizer")
+
+st.caption(
+    "Transform messy meeting transcripts into structured "
+    "summaries and actionable tasks."
+)
+
+# --------------------------------
 # SIDEBAR
-# -----------------------------
+# --------------------------------
+
 st.sidebar.header("⚙️ Configuration")
 
 api_key = st.sidebar.text_input(
-    "Enter Gemini API Key:",
+    "Enter Groq API Key:",
     type="password"
 )
 
 if not api_key:
-    st.info("👈 Enter your Gemini API Key in the sidebar to get started.")
+    st.info(
+        "👈 Enter your Groq API Key in the sidebar to get started."
+    )
     st.stop()
 
-# Create Gemini client
-client = genai.Client(api_key=api_key)
+# Create Groq client
+client = Groq(api_key=api_key)
 
-# -----------------------------
-# SAMPLE TRANSCRIPT
-# -----------------------------
+# --------------------------------
+# SAMPLE MEETING
+# --------------------------------
+
 sample_transcript = """
 Meeting Title: Q4 Marketing Strategy Sync
 
@@ -54,53 +67,69 @@ Priya: I'll also send out the brand color guidelines to the agency by Wednesday.
 Sarah: Perfect. Let's reconvene on Friday.
 """
 
-# -----------------------------
+# --------------------------------
 # LOAD SAMPLE
-# -----------------------------
-if st.button("📄 Load Sample Transcript"):
-    st.session_state["transcript_input"] = sample_transcript.strip()
+# --------------------------------
 
-# -----------------------------
-# INPUT
-# -----------------------------
+if st.button("📄 Load Sample Transcript"):
+
+    st.session_state["transcript_input"] = (
+        sample_transcript.strip()
+    )
+
+# --------------------------------
+# TRANSCRIPT INPUT
+# --------------------------------
+
 transcript = st.text_area(
     "Paste Meeting Transcript / Notes:",
     value=st.session_state.get("transcript_input", ""),
     height=250
 )
 
-# -----------------------------
-# GENERATE SUMMARY
-# -----------------------------
-if st.button("✨ Generate Summary & Action Items", type="primary"):
+# --------------------------------
+# GENERATE
+# --------------------------------
+
+if st.button(
+    "✨ Generate Summary & Action Items",
+    type="primary"
+):
 
     if not transcript.strip():
-        st.warning("Please enter a meeting transcript first.")
+
+        st.warning(
+            "Please enter a meeting transcript first."
+        )
+
         st.stop()
 
     prompt = f"""
-You are an AI meeting assistant.
+You are an AI Meeting Assistant.
 
 Analyze the following meeting transcript.
 
 MEETING TRANSCRIPT:
 {transcript}
 
-Perform the following tasks:
+Your tasks:
 
-1. Give a concise executive summary in 3-5 bullet points.
+1. Create a concise executive summary in 3-5 bullet points.
 
-2. Extract every important action item.
+2. Identify ALL important action items.
 
-3. For each action item identify:
+3. For every action item identify:
    - Action Item
    - Owner
    - Due Date
 
-4. If an owner or due date is not explicitly mentioned, write "Not specified".
-   Do not invent information.
+4. Identify important decisions made during the meeting.
 
-Format the response exactly like this:
+5. Do NOT invent information.
+   If an owner or due date is not mentioned,
+   write "Not specified".
+
+Return the answer using EXACTLY this structure:
 
 ## 📌 Executive Summary
 
@@ -112,27 +141,54 @@ Format the response exactly like this:
 
 | Action Item | Owner | Due Date |
 |---|---|---|
-| Example task | Person | Date |
+| Task | Person | Date |
 
 ## 🎯 Key Decisions
 
 - Decision 1
 - Decision 2
 
-Keep the answer professional, concise and easy to understand.
+Keep the output professional, concise,
+and easy to understand.
 """
 
     try:
-        with st.spinner("🤖 Gemini is analyzing the meeting..."):
 
-            response = client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=prompt
+        with st.spinner(
+            "🤖 AI is analyzing the meeting..."
+        ):
+
+            response = client.chat.completions.create(
+
+                model="openai/gpt-oss-120b",
+
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a professional "
+                            "meeting summarization assistant."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+
+                temperature=0.2,
+
+                max_tokens=1500
             )
+
+        result = response.choices[0].message.content
 
         st.success("✅ Analysis Complete!")
 
-        st.markdown(response.text)
+        st.markdown(result)
 
     except Exception as e:
-        st.error(f"❌ Gemini API Error: {e}")
+
+        st.error(
+            f"❌ Groq API Error: {str(e)}"
+        )
