@@ -1,5 +1,6 @@
 import streamlit as st
 from groq import Groq
+import textwrap
 
 # =========================================================
 # PAGE CONFIG
@@ -16,27 +17,34 @@ st.set_page_config(
 # CUSTOM CSS
 # =========================================================
 
-st.markdown("""
-<style>
+st.markdown(
+    textwrap.dedent("""
+    <style>
 
-    /* Main background */
+    /* =========================
+       MAIN APPLICATION
+       ========================= */
+
     .stApp {
         background-color: #f7f8fc;
     }
 
-    /* Main content */
     .main .block-container {
         padding-top: 2rem;
         padding-bottom: 3rem;
         max-width: 1200px;
     }
 
-    /* Header */
+
+    /* =========================
+       HERO HEADER
+       ========================= */
+
     .hero {
         background: linear-gradient(135deg, #182848 0%, #4b6cb7 100%);
         padding: 2.2rem 2.5rem;
         border-radius: 18px;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.8rem;
         color: white;
         box-shadow: 0 8px 25px rgba(24, 40, 72, 0.15);
     }
@@ -44,7 +52,7 @@ st.markdown("""
     .hero h1 {
         color: white;
         font-size: 2.5rem;
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.4rem;
         font-weight: 700;
     }
 
@@ -52,106 +60,133 @@ st.markdown("""
         color: #e8ecf8;
         font-size: 1.05rem;
         margin-bottom: 0;
+        line-height: 1.6;
     }
 
     .badge {
         display: inline-block;
-        background: rgba(255,255,255,0.16);
+        background: rgba(255, 255, 255, 0.16);
         color: white;
         padding: 0.35rem 0.8rem;
         border-radius: 20px;
         font-size: 0.78rem;
         margin-bottom: 0.8rem;
-        border: 1px solid rgba(255,255,255,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* Section cards */
-    .section-card {
-        background: white;
-        border: 1px solid #e7e9f2;
-        border-radius: 15px;
-        padding: 1.3rem 1.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(30, 40, 80, 0.05);
-    }
+
+    /* =========================
+       SECTION TITLES
+       ========================= */
 
     .section-title {
-        font-size: 1.15rem;
+        font-size: 1.2rem;
         font-weight: 700;
         color: #182848;
-        margin-bottom: 0.7rem;
+        margin-top: 1rem;
+        margin-bottom: 0.6rem;
     }
 
-    /* Info cards */
+
+    /* =========================
+       INFORMATION CARD
+       ========================= */
+
     .info-card {
         background: #eef3ff;
         border-left: 4px solid #4b6cb7;
         border-radius: 10px;
         padding: 1rem 1.2rem;
-        margin: 0.8rem 0;
+        margin: 1rem 0;
         color: #25345b;
+        line-height: 1.6;
     }
 
-    /* Sidebar */
+
+    /* =========================
+       RESULT CARD
+       ========================= */
+
+    .result-card {
+        background: white;
+        border: 1px solid #e7e9f2;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        box-shadow: 0 4px 15px rgba(30, 40, 80, 0.05);
+    }
+
+
+    /* =========================
+       SIDEBAR
+       ========================= */
+
     section[data-testid="stSidebar"] {
         background-color: #f0f2f8;
     }
 
-    section[data-testid="stSidebar"] h2 {
-        color: #182848;
-    }
 
-    /* Buttons */
+    /* =========================
+       BUTTONS
+       ========================= */
+
     .stButton > button {
         border-radius: 10px;
         font-weight: 600;
         min-height: 2.8rem;
-        border: none;
     }
 
-    /* Primary button */
-    .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #182848, #4b6cb7);
-        color: white;
-    }
 
-    /* Text area */
+    /* =========================
+       TEXT AREA
+       ========================= */
+
     textarea {
         border-radius: 12px !important;
     }
 
-    /* Footer */
+
+    /* =========================
+       FOOTER
+       ========================= */
+
     .footer {
         text-align: center;
         color: #7b8194;
         font-size: 0.82rem;
-        margin-top: 2.5rem;
+        margin-top: 3rem;
         padding-top: 1.5rem;
         border-top: 1px solid #e1e3eb;
+        line-height: 1.7;
     }
 
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """),
+    unsafe_allow_html=True
+)
 
 
 # =========================================================
-# HEADER
+# HERO HEADER
 # =========================================================
 
-st.markdown("""
-<div class="hero">
+st.markdown(
+    textwrap.dedent("""
+    <div class="hero">
+        <div class="badge">
+            ✨ AI-Powered Productivity Assistant
+        </div>
 
-    <div class="badge">✨ AI-Powered Productivity Assistant</div>
+        <h1>📝 AI Meeting Summarizer</h1>
 
-    <h1>📝 AI Meeting Summarizer</h1>
-
-    <p>
-        Transform unstructured meeting conversations into
-        clear summaries, actionable tasks and important decisions.
-    </p>
-
-</div>
-""", unsafe_allow_html=True)
+        <p>
+            Transform unstructured meeting conversations into
+            clear summaries, actionable tasks and important decisions.
+        </p>
+    </div>
+    """),
+    unsafe_allow_html=True
+)
 
 
 # =========================================================
@@ -216,22 +251,27 @@ st.sidebar.caption(
 
 if not api_key:
 
-    st.markdown("""
-    <div class="info-card">
-        🔐 <b>Getting Started</b><br><br>
-        Enter your Groq API key in the sidebar to activate
-        the meeting analysis functionality.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        textwrap.dedent("""
+        <div class="info-card">
+            🔐 <b>Getting Started</b><br><br>
+
+            Enter your Groq API key in the sidebar to activate
+            the meeting analysis functionality.
+        </div>
+        """),
+        unsafe_allow_html=True
+    )
 
     st.stop()
 
 
+# Create Groq client
 client = Groq(api_key=api_key)
 
 
 # =========================================================
-# SAMPLE TRANSCRIPT
+# SAMPLE MEETING TRANSCRIPT
 # =========================================================
 
 sample_transcript = """
@@ -276,7 +316,7 @@ Ananya: Perfect. Let's reconvene on 17 October.
 
 
 # =========================================================
-# INPUT SECTION
+# MEETING TRANSCRIPT SECTION
 # =========================================================
 
 st.markdown(
@@ -288,6 +328,7 @@ st.caption(
     "Paste your meeting transcript below, or load the sample meeting to see how the application works."
 )
 
+
 # Load sample button
 
 if st.button("📄 Load Sample Product Launch Meeting"):
@@ -295,13 +336,13 @@ if st.button("📄 Load Sample Product Launch Meeting"):
     st.session_state["transcript_input"] = sample_transcript.strip()
 
 
+# Transcript input
+
 transcript = st.text_area(
     "Meeting Notes / Transcript",
     value=st.session_state.get("transcript_input", ""),
     height=320,
-    placeholder=(
-        "Paste your meeting transcript here..."
-    ),
+    placeholder="Paste your meeting transcript here...",
     label_visibility="collapsed"
 )
 
@@ -332,6 +373,10 @@ if generate:
         st.stop()
 
 
+    # =====================================================
+    # PROMPT
+    # =====================================================
+
     prompt = f"""
 You are an expert AI Meeting Assistant helping managers
 convert unstructured meeting discussions into useful,
@@ -345,30 +390,39 @@ MEETING TRANSCRIPT:
 Perform the following tasks:
 
 1. EXECUTIVE SUMMARY
+
 Create a concise summary containing the 3–5 most important
 points discussed in the meeting.
 
 2. ACTION ITEMS
+
 Identify ALL clearly stated action items.
 
 For every action item provide:
+
 - Action Item
 - Owner
 - Due Date
 
 IMPORTANT:
+
 Do NOT invent an owner or deadline.
+
 If an owner is not explicitly identifiable, write:
+
 "Not specified"
 
 If a deadline is not explicitly stated, write:
+
 "Not specified"
 
 3. KEY DECISIONS
+
 Identify important decisions or commitments made during
 the meeting.
 
 4. DEPENDENCIES AND RISKS
+
 Identify dependencies between tasks and any risks,
 uncertainties or potential bottlenecks discussed.
 
@@ -376,6 +430,7 @@ Do NOT invent risks that are not reasonably supported
 by the transcript.
 
 5. MEETING FOLLOW-UP
+
 Identify the next meeting or follow-up activity if one
 is explicitly mentioned.
 
@@ -405,6 +460,7 @@ Use exactly this structure:
 
 If no meaningful dependencies or risks are present,
 write:
+
 "No major dependencies or risks identified."
 
 ## 📅 Follow-Up
@@ -417,6 +473,10 @@ for a business environment.
 Do not add information that is not supported by the transcript.
 """
 
+
+    # =====================================================
+    # API CALL
+    # =====================================================
 
     try:
 
@@ -451,29 +511,41 @@ Do not add information that is not supported by the transcript.
             )
 
 
+        # =================================================
+        # GET RESULT
+        # =================================================
+
         result = response.choices[0].message.content
 
 
         # =================================================
-        # RESULTS HEADER
+        # SUCCESS MESSAGE
         # =================================================
 
-        st.success("✅ Meeting analysis completed successfully!")
+        st.success(
+            "✅ Meeting analysis completed successfully!"
+        )
+
+
+        # =================================================
+        # RESULTS
+        # =================================================
 
         st.markdown(
-            '<div class="section-card">',
+            textwrap.dedent("""
+            <div class="result-card">
+            """),
             unsafe_allow_html=True
         )
 
         st.markdown(
-            '<div class="section-title">📊 Meeting Insights</div>',
-            unsafe_allow_html=True
+            "### 📊 Meeting Insights"
         )
 
         st.markdown(result)
 
         st.markdown(
-            '</div>',
+            "</div>",
             unsafe_allow_html=True
         )
 
@@ -482,18 +554,25 @@ Do not add information that is not supported by the transcript.
         # HUMAN REVIEW NOTICE
         # =================================================
 
-        st.markdown("""
-        <div class="info-card">
+        st.markdown(
+            textwrap.dedent("""
+            <div class="info-card">
 
-        👤 <b>Human Review Recommended</b><br><br>
+                👤 <b>Human Review Recommended</b><br><br>
 
-        AI-generated summaries and action items should be
-        reviewed by a meeting participant before they are
-        treated as official commitments or deadlines.
+                AI-generated summaries and action items should
+                be reviewed by a meeting participant before they
+                are treated as official commitments or deadlines.
 
-        </div>
-        """, unsafe_allow_html=True)
+            </div>
+            """),
+            unsafe_allow_html=True
+        )
 
+
+    # =====================================================
+    # ERROR HANDLING
+    # =====================================================
 
     except Exception as e:
 
@@ -506,16 +585,19 @@ Do not add information that is not supported by the transcript.
 # FOOTER
 # =========================================================
 
-st.markdown("""
-<div class="footer">
+st.markdown(
+    textwrap.dedent("""
+    <div class="footer">
 
-<b>AI Meeting Summarizer</b><br>
+        <b>AI Meeting Summarizer</b><br>
 
-Transforming conversations into actionable outcomes
+        Transforming conversations into actionable outcomes
 
-<br><br>
+        <br><br>
 
-Academic Project • FORE School of Management
+        Academic Project • FORE School of Management
 
-</div>
-""", unsafe_allow_html=True)
+    </div>
+    """),
+    unsafe_allow_html=True
+)
