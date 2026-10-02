@@ -1,86 +1,138 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
-st.set_page_config(page_title="AI Meeting Summarizer", page_icon="📝")
+# -----------------------------
+# PAGE CONFIG
+# -----------------------------
+st.set_page_config(
+    page_title="AI Meeting Summarizer",
+    page_icon="📝",
+    layout="centered"
+)
 
-st.title("📝 Meeting Notes to Action Items Summarizer")
-st.caption("Transform messy meeting transcripts into structured action items instantly.")
+st.title("📝 AI Meeting Summarizer")
+st.caption("Transform messy meeting transcripts into structured summaries and action items.")
 
-# Sidebar - API Key Input
-st.sidebar.header("Configuration")
-api_key = st.sidebar.text_input("Enter Gemini API Key:", type="password")
+# -----------------------------
+# SIDEBAR
+# -----------------------------
+st.sidebar.header("⚙️ Configuration")
+
+api_key = st.sidebar.text_input(
+    "Enter Gemini API Key:",
+    type="password"
+)
 
 if not api_key:
-    st.info("👈 Please enter your Gemini API Key in the sidebar to get started.")
+    st.info("👈 Enter your Gemini API Key in the sidebar to get started.")
     st.stop()
 
-genai.configure(api_key=api_key)
+# Create Gemini client
+client = genai.Client(api_key=api_key)
 
-# Sample Text Generator Button
+# -----------------------------
+# SAMPLE TRANSCRIPT
+# -----------------------------
 sample_transcript = """
 Meeting Title: Q4 Marketing Strategy Sync
-Attendees: Sarah Jenkins (Lead), David Chen (Developer), Priya Sharma (Designer)
+
+Attendees:
+Sarah Jenkins (Lead)
+David Chen (Developer)
+Priya Sharma (Designer)
 
 Sarah: Welcome everyone. First, we need to finalize the landing page redesign by next Friday. Priya, can you take ownership of updating the Figma wireframes by Tuesday?
+
 Priya: Sure, I will complete the wireframes by Tuesday EOD.
+
 David: I will review the API endpoints once Priya uploads the wireframes, likely by Thursday.
+
 Sarah: Great. Also, David, please fix the login bug reported by customer support by Monday.
+
 Priya: I'll also send out the brand color guidelines to the agency by Wednesday.
+
 Sarah: Perfect. Let's reconvene on Friday.
 """
 
-if st.button("Load Sample Transcript"):
+# -----------------------------
+# LOAD SAMPLE
+# -----------------------------
+if st.button("📄 Load Sample Transcript"):
     st.session_state["transcript_input"] = sample_transcript.strip()
 
-# Input Text Area
+# -----------------------------
+# INPUT
+# -----------------------------
 transcript = st.text_area(
-    "Paste Meeting Transcript / Notes:", 
-    value=st.session_state.get("transcript_input", ""), 
-    height=200
+    "Paste Meeting Transcript / Notes:",
+    value=st.session_state.get("transcript_input", ""),
+    height=250
 )
 
-# Process Button
-if st.button("Generate Summary & Action Items", type="primary"):
+# -----------------------------
+# GENERATE SUMMARY
+# -----------------------------
+if st.button("✨ Generate Summary & Action Items", type="primary"):
+
     if not transcript.strip():
-        st.warning("Please enter or paste a transcript first.")
+        st.warning("Please enter a meeting transcript first.")
         st.stop()
-        
-    with st.spinner("Finding active Gemini model & analyzing transcript..."):
-        try:
-            # Retrieve active models supported by your API Key
-            valid_models = []
-            for m in genai.list_models():
-                if "generateContent" in m.supported_generation_methods:
-                    # Clean up model name string prefix if needed
-                    model_id = m.name.replace("models/", "")
-                    valid_models.append(model_id)
 
-            if not valid_models:
-                st.error("No available text-generation models found for this API Key.")
-                st.stop()
+    prompt = f"""
+You are an AI meeting assistant.
 
-            # Pick the best available flash model, or fallback to the first model in the list
-            selected_model = valid_models[0]
-            for m in valid_models:
-                if "flash" in m.lower():
-                    selected_model = m
-                    break
+Analyze the following meeting transcript.
 
-            model = genai.GenerativeModel(selected_model)
-            
-            prompt = f"""
-            Analyze the following meeting transcript:
-            
-            "{transcript}"
-            
-            Perform two tasks:
-            1. Provide a concise executive summary (3-4 bullet points).
-            2. Extract all action items in a strict Markdown Table format with columns: Action Item | Owner | Due Date.
-            """
-            
-            response = model.generate_content(prompt)
-            st.success(f"Analysis Complete! (Using model: {selected_model})")
-            st.markdown(response.text)
-            
-        except Exception as e:
-            st.error(f"Error executing Gemini API call: {e}")
+MEETING TRANSCRIPT:
+{transcript}
+
+Perform the following tasks:
+
+1. Give a concise executive summary in 3-5 bullet points.
+
+2. Extract every important action item.
+
+3. For each action item identify:
+   - Action Item
+   - Owner
+   - Due Date
+
+4. If an owner or due date is not explicitly mentioned, write "Not specified".
+   Do not invent information.
+
+Format the response exactly like this:
+
+## 📌 Executive Summary
+
+- Point 1
+- Point 2
+- Point 3
+
+## ✅ Action Items
+
+| Action Item | Owner | Due Date |
+|---|---|---|
+| Example task | Person | Date |
+
+## 🎯 Key Decisions
+
+- Decision 1
+- Decision 2
+
+Keep the answer professional, concise and easy to understand.
+"""
+
+    try:
+        with st.spinner("🤖 Gemini is analyzing the meeting..."):
+
+            response = client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=prompt
+            )
+
+        st.success("✅ Analysis Complete!")
+
+        st.markdown(response.text)
+
+    except Exception as e:
+        st.error(f"❌ Gemini API Error: {e}")
