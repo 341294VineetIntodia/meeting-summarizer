@@ -45,38 +45,42 @@ if st.button("Generate Summary & Action Items", type="primary"):
         st.warning("Please enter or paste a transcript first.")
         st.stop()
         
-    with st.spinner("Analyzing transcript with Gemini..."):
-        # Model target updated to current supported Gemini Flash versions
-        candidate_models = ["gemini-3.8-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"]
-        
-        response = None
-        used_model = None
-        last_error = None
+    with st.spinner("Finding active Gemini model & analyzing transcript..."):
+        try:
+            # Retrieve active models supported by your API Key
+            valid_models = []
+            for m in genai.list_models():
+                if "generateContent" in m.supported_generation_methods:
+                    # Clean up model name string prefix if needed
+                    model_id = m.name.replace("models/", "")
+                    valid_models.append(model_id)
 
-        prompt = f"""
-        Analyze the following meeting transcript:
-        
-        "{transcript}"
-        
-        Perform two tasks:
-        1. Provide a concise executive summary (3-4 bullet points).
-        2. Extract all action items in a strict Markdown Table format with columns: Action Item | Owner | Due Date.
-        """
+            if not valid_models:
+                st.error("No available text-generation models found for this API Key.")
+                st.stop()
 
-        for model_name in candidate_models:
-            try:
-                model = genai.GenerativeModel(model_name)
-                res = model.generate_content(prompt)
-                if res and res.text:
-                    response = res
-                    used_model = model_name
+            # Pick the best available flash model, or fallback to the first model in the list
+            selected_model = valid_models[0]
+            for m in valid_models:
+                if "flash" in m.lower():
+                    selected_model = m
                     break
-            except Exception as e:
-                last_error = e
-                continue
 
-        if response and response.text:
-            st.success(f"Analysis Complete! (Model: {used_model})")
+            model = genai.GenerativeModel(selected_model)
+            
+            prompt = f"""
+            Analyze the following meeting transcript:
+            
+            "{transcript}"
+            
+            Perform two tasks:
+            1. Provide a concise executive summary (3-4 bullet points).
+            2. Extract all action items in a strict Markdown Table format with columns: Action Item | Owner | Due Date.
+            """
+            
+            response = model.generate_content(prompt)
+            st.success(f"Analysis Complete! (Using model: {selected_model})")
             st.markdown(response.text)
-        else:
-            st.error(f"Error calling Gemini API: {last_error}")
+            
+        except Exception as e:
+            st.error(f"Error executing Gemini API call: {e}")
