@@ -16,28 +16,6 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-# Function to dynamically select an active model that supports text generation
-@st.cache_resource
-def get_available_model(_api_key):
-    try:
-        available_models = [
-            m.name for m in genai.list_models()
-            if "generateContent" in m.supported_generation_methods
-        ]
-        if not available_models:
-            return None, "No models supporting text generation were found for this API key."
-        
-        # Prefer flash models if available, otherwise pick the first valid model
-        selected_model = available_models[0]
-        for m in available_models:
-            if "flash" in m.lower():
-                selected_model = m
-                break
-                
-        return selected_model, None
-    except Exception as e:
-        return None, str(e)
-
 # Sample Text Generator Button
 sample_transcript = """
 Meeting Title: Q4 Marketing Strategy Sync
@@ -67,29 +45,38 @@ if st.button("Generate Summary & Action Items", type="primary"):
         st.warning("Please enter or paste a transcript first.")
         st.stop()
         
-    with st.spinner("Finding active Gemini model & analyzing transcript..."):
-        model_name, error = get_available_model(api_key)
+    with st.spinner("Analyzing transcript with Gemini..."):
+        # Model target updated to current supported Gemini Flash versions
+        candidate_models = ["gemini-3.8-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"]
         
-        if error or not model_name:
-            st.error(f"Failed to retrieve available Gemini model: {error}")
-            st.stop()
-            
-        try:
-            model = genai.GenerativeModel(model_name)
-            
-            prompt = f"""
-            Analyze the following meeting transcript:
-            
-            "{transcript}"
-            
-            Perform two tasks:
-            1. Provide a concise executive summary (3-4 bullet points).
-            2. Extract all action items in a strict Markdown Table format with columns: Action Item | Owner | Due Date.
-            """
-            
-            response = model.generate_content(prompt)
-            st.success(f"Analysis Complete! (Using model: {model_name})")
+        response = None
+        used_model = None
+        last_error = None
+
+        prompt = f"""
+        Analyze the following meeting transcript:
+        
+        "{transcript}"
+        
+        Perform two tasks:
+        1. Provide a concise executive summary (3-4 bullet points).
+        2. Extract all action items in a strict Markdown Table format with columns: Action Item | Owner | Due Date.
+        """
+
+        for model_name in candidate_models:
+            try:
+                model = genai.GenerativeModel(model_name)
+                res = model.generate_content(prompt)
+                if res and res.text:
+                    response = res
+                    used_model = model_name
+                    break
+            except Exception as e:
+                last_error = e
+                continue
+
+        if response and response.text:
+            st.success(f"Analysis Complete! (Model: {used_model})")
             st.markdown(response.text)
-            
-        except Exception as e:
-            st.error(f"Error calling Gemini API: {e}")
+        else:
+            st.error(f"Error calling Gemini API: {last_error}")
