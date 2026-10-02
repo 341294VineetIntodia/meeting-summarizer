@@ -48,7 +48,7 @@ if st.button("Generate Summary & Action Items", type="primary"):
 
     with st.spinner("Analyzing transcript with Gemini..."):
         try:
-            model = genai.GenerativeModel("models/gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-1.5-flash")
 
             prompt = f"""
             Analyze the following meeting transcript:
